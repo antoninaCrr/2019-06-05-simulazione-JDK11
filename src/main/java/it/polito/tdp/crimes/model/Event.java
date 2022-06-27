@@ -2,7 +2,7 @@ package it.polito.tdp.crimes.model;
 
 import java.time.LocalDateTime;
 
-public class Event {
+public class Event{
 	
 	private Long incident_id;
 	private Integer offense_code;
