@@ -14,8 +14,9 @@ import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
+import it.polito.tdp.crimes.model.Adiacente;
+import it.polito.tdp.crimes.model.District;
 import it.polito.tdp.crimes.model.Model;
-import it.polito.tdp.crimes.model.Vicino;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -57,8 +58,8 @@ public class FXMLController {
     void doCreaReteCittadina(ActionEvent event) {
 
     	txtResult.clear();
-    	int anno = this.boxAnno.getValue();
-    	if(anno==0) {
+    	Integer anno = this.boxAnno.getValue();
+    	if(anno == null) {
     		txtResult.appendText("Seleziona un anno!");
     		return;
     	}
@@ -66,11 +67,11 @@ public class FXMLController {
     	this.model.creaGrafo(anno);
     	txtResult.appendText("Grafo creato : "+this.model.getNVertici()+" vertici, "+this.model.getNArchi()+" archi\n\n");
     	
-    	for(Integer id : this.model.getVertici()) {
+    	for(District d : this.model.getVertici()) {
     		
-    		txtResult.appendText("Distretti adiacenti a "+id+"\n");
-    		for(Vicino v : this.model.getVicini(id)) {
-    			txtResult.appendText(v.getDisctrict_id()+" ("+v.getDistance()+" km)\n");
+    		txtResult.appendText("Distretti adiacenti a "+d.getDisctrict_id()+"\n");
+    		for(Adiacente a : this.model.getAdiacenti(d)) {
+    			txtResult.appendText(a.toString()+"\n");
     		}
     	}
     	
@@ -80,11 +81,12 @@ public class FXMLController {
     @FXML
     void doSimula(ActionEvent event) {
 
-    	int anno = this.boxAnno.getValue();
-    	int mese = this.boxMese.getValue();
-    	int giorno = this.boxGiorno.getValue();
+    	this.txtResult.clear();
+    	Integer anno = this.boxAnno.getValue();
+    	Integer mese = this.boxMese.getValue();
+    	Integer giorno = this.boxGiorno.getValue();
     	
-    	if(anno==0 || mese==0 || giorno==0) {
+    	if(anno == null || mese == null || giorno == null) {
     		txtResult.appendText("Selezionare anno, mese e giorno!");
     		return;
     	}
@@ -93,7 +95,8 @@ public class FXMLController {
     	
     	try {
     		N = Integer.parseInt(this.txtN.getText());
-    		int malGestiti = this.model.simula(anno, mese, giorno, N);
+    		this.model.simula(N,anno, mese, giorno);
+    		int malGestiti = model.getMalGestiti();
     		
     		txtResult.appendText("SIMULAZIONE TERMINAATA\n");
     		txtResult.appendText("Numero di casi mal gestiti : "+malGestiti);
@@ -101,6 +104,7 @@ public class FXMLController {
     	}catch(NumberFormatException e) {
     		e.printStackTrace();
     		txtResult.appendText("Il campo 'n' deve essere un numero intero!");
+    		return;
     	}
     }
 
@@ -119,7 +123,12 @@ public class FXMLController {
     public void setModel(Model model) {
     	this.model = model;
     	this.boxAnno.getItems().addAll(this.model.getYears());
-    	this.boxMese.getItems().addAll(this.model.getMonths());
-    	this.boxGiorno.getItems().addAll(this.model.getDay());
+    	for(int i = 1; i <= 31; i++) {
+    		this.boxGiorno.getItems().add(i);
+    	}
+    	for(int i = 1; i <= 12; i++) {
+    	    this.boxMese.getItems().add(i);
+    	}
     }
+    	
 }

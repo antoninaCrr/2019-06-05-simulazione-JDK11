@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.javadocmd.simplelatlng.LatLng;
 import com.javadocmd.simplelatlng.LatLngTool;
@@ -17,15 +18,47 @@ import it.polito.tdp.crimes.model.Event;
 
 public class EventsDao {
 	
-	public List<Event> listAllEvents(){
-		String sql = "SELECT * FROM events" ;
+	public List<District> getDistrictByYear(Integer year, Map<Integer, District> map){
+		String sql = " SELECT e.district_id, AVG(e.geo_lat) AS lat_media, AVG(e.geo_lon) AS lon_media "
+				+ "FROM events e "
+				+ "WHERE YEAR(e.reported_date) = ? "
+				+ "GROUP BY e.district_id";
+		List<District> distretti = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			st.setInt(1, year);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				District d = new District(res.getInt("district_id"), new LatLng(res.getDouble("lat_media"),res.getDouble("lon_media")));
+				map.put(d.getDisctrict_id(), d);
+				distretti.add(d);
+			}
+			
+			conn.close();
+			return distretti ;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null ;
+		}
+		
+	}
+	
+	public List<Event> listAllEventsByYear(Integer anno){
+		String sql = "SELECT * FROM events WHERE YEAR(reported_date) = ?" ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
 
 			PreparedStatement st = conn.prepareStatement(sql) ;
 			
 			List<Event> list = new ArrayList<>() ;
-			
+			st.setInt(1, anno);
 			ResultSet res = st.executeQuery() ;
 			
 			while(res.next()) {
@@ -138,7 +171,7 @@ public class EventsDao {
 		}
 	}
 	
-	public List<Integer> getDistricts(){
+	/*public List<Integer> getDistricts(){
 		
 		String sql = "SELECT DISTINCT e.district_id "
 				+ "FROM events e "
@@ -204,7 +237,7 @@ public class EventsDao {
 			e.printStackTrace();
 			return null ;
 		}
-	}
+	}*/
 	
 	public Integer getDistrettoMin(int anno) {
 		
@@ -212,7 +245,7 @@ public class EventsDao {
 				+ "FROM events e "
 				+ "WHERE YEAR(e.reported_date)=? "
 				+ "GROUP BY e.district_id "
-				+ "ORDER BY COUNT(*) ";
+				+ "ORDER BY COUNT(*) ASC ";
 		
 		try {
 			Connection conn = DBConnect.getConnection() ;
@@ -238,7 +271,7 @@ public class EventsDao {
 		}
 	}
 	
-	public List<Integer> getAnni(){
+	/*public List<Integer> getAnni(){
 		String sql = "SELECT DISTINCT YEAR(reported_date) as anno FROM events";
 		List<Integer> result = new ArrayList<Integer>();
 		try {
@@ -296,7 +329,7 @@ public class EventsDao {
 			t.printStackTrace();
 			return null;
 		}
-	}
+	}*/
 		
 
 }

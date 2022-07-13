@@ -19,53 +19,38 @@ import it.polito.tdp.crimes.db.EventsDao;
 public class Model {
 	
 	private EventsDao dao;
-	private Graph<Integer,DefaultWeightedEdge> grafo;
-	private List<District> distrettiConCentro;
+	private Graph<District,DefaultWeightedEdge> grafo;
+	private Map<Integer, District> distretti;
+	private Simulator sim;
 	
 	public Model() {
 		this.dao = new EventsDao();
+		this.sim = new Simulator();
 	}
 	
 	public void creaGrafo(int anno) {
 		
-		this.grafo = new SimpleWeightedGraph<Integer,DefaultWeightedEdge>(DefaultWeightedEdge.class);
+		this.grafo = new SimpleWeightedGraph<District,DefaultWeightedEdge>(DefaultWeightedEdge.class);
+		this.distretti = new HashMap<>();
 		
-		Graphs.addAllVertices(this.grafo, this.dao.getDistricts());
+		// vertici
+		Graphs.addAllVertices(this.grafo, dao.getDistrictByYear(anno, distretti));
 		
-		List<Integer> districts = this.dao.getDistricts();
-		distrettiConCentro = this.dao.getCentroCriminiByAnno(anno);
-		for(Integer i : districts) {
-			for(Integer j : districts) {
-				if(i!=j) {
-					double distanza = LatLngTool.distance(distrettiConCentro.get(i-1).getCentro(), distrettiConCentro.get(j-1).getCentro(), LengthUnit.KILOMETER);
-					Graphs.addEdge(this.grafo, i, j,distanza);
+		// archi
+		for(District d1 : this.grafo.vertexSet()) {
+			for(District d2 : this.grafo.vertexSet()) {
+				if(!d1.equals(d2)) {
+					double peso = LatLngTool.distance(d1.getCentro(), d2.getCentro(),LengthUnit.KILOMETER);
+					Graphs.addEdgeWithVertices(this.grafo, d1, d2, peso);
 				}
 			}
 		}
-		
-		
+				
 		System.out.println("GRAFO CREATO: "+this.grafo.vertexSet().size()+" vertici, "+this.grafo.edgeSet().size()+" archi\n");
 	}
 	
 	
-	public int simula(int anno, int mese, int giorno, int N) {
-		Simulatore sim = new Simulatore();
-		sim.init(giorno, mese, anno, N, grafo);
-		sim.run();
-		return sim.getMalGestiti();
-	}
 	
-	public List<Integer> getYears(){
-		return this.dao.getYears();
-	}
-	
-	public List<Integer> getMonths(){
-		return this.dao.getMesi();
-	}
-	
-	public List<Integer> getDay(){
-		return this.dao.getGiorni();
-	}
 	
 	public int getNVertici() {
 		return this.grafo.vertexSet().size();
@@ -75,20 +60,39 @@ public class Model {
 		return this.grafo.edgeSet().size();
 	}
 	
-	public List<Integer> getVertici() {
-		return new ArrayList<Integer>(this.grafo.vertexSet());
+	public List<District> getVertici() {
+		return new ArrayList<District>(this.grafo.vertexSet());
+	}
+	
+	public List<Integer> getYears(){
+		return dao.getYears();
 	}
 
-	public List<Vicino> getVicini(Integer id) {
+	public List<Adiacente> getAdiacenti(District d){
+		List<Adiacente> vicini = new ArrayList<>();
 		
-		List<Integer> adiacenti = Graphs.neighborListOf(this.grafo, id);
-		List<Vicino> vicini = new ArrayList<Vicino>();
-		for(Integer i : adiacenti) {
-			vicini.add(new Vicino(i,this.grafo.getEdgeWeight(this.grafo.getEdge(id, i))));
+		for(District di : Graphs.neighborListOf(this.grafo, d)) {
+			Adiacente a = new Adiacente(di,this.grafo.getEdgeWeight(this.grafo.getEdge(d, di)));
+			vicini.add(a);
 		}
+		
 		Collections.sort(vicini);
+		
 		return vicini;
+		
 	}
+	
+	public void simula(Integer N, Integer anno, Integer mese, Integer giorno) {
+		
+		sim.init(N, anno, mese, giorno, grafo, distretti);
+		sim.run();
+	}
+	
+	public Integer getMalGestiti() {
+		
+		return sim.getMalGestiti();
+	}
+	
 
 	
 	
